@@ -3,18 +3,18 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <time.h>
+#include "utils.h"
 #include "secrets.h"
+#include "wifi_manager.h"
 #define TIME_ZONE -3
  
 const int RELAY_1 = 16;
 const int RELAY_2 = 5;
 const int RELAY_3 = 4;
 const int RELAY_4 = 14;
-const int LED = 2;
-unsigned long LedsSequence[4]; //[x] is the number of leds array
 
-#define AWS_IOT_SUBSCRIBE_TOPIC "tock/things/pool-green2b/update" // "pool-green2b/command"
-#define AWS_IOT_PUBLISH_TOPIC "tock/things/pool-green2b/update/return"     // "pool-green2b/return"
+#define AWS_IOT_SUBSCRIBE_TOPIC "$aws/things/pool-green2b/shadow/update" // "pool-green2B/command"
+#define AWS_IOT_PUBLISH_TOPIC "$aws/things/pool-green2b/shadow/update"     // "pool-green2B/return"
 
 WiFiClientSecure net;
  
@@ -26,15 +26,7 @@ PubSubClient client(net);
  
 time_t now;
 time_t nowish = 1510592825;
- 
-void blinkLed(int led, int interval, int array, int repeat)
-{
-  if ((int)((long)millis() - LedsSequence[array]) >= interval)
-  {
-    LedsSequence[array] = millis(); // stores the millis value in the selected array
-    digitalWrite(LED, !digitalRead(LED)); // changes led state
-  }
-}
+
 void NTPConnect(void)
 {
   Serial.print("Setting time using SNTP");
@@ -64,13 +56,18 @@ void messageReceived(char *topic, byte *payload, unsigned int length)
 {
   StaticJsonDocument<400> doc;
   deserializeJson(doc, payload);
-  Serial.println((String)doc["state"]);
-  //print received message
-  Serial.print("Received [");
-  Serial.print(topic);
-  Serial.println("]: ");
-  for (int i = 0; i < length; i++){Serial.print((char)payload[i]);}
+  serializeJsonPretty(doc, Serial);
+  
+  // Serial.println((String)doc["state"]);
+  // //print received message
+  // Serial.print("Received [");
+  // Serial.print(topic);
+  // Serial.println("]: ");
+  // for (int i = 0; i < length; i++){Serial.print((char)payload[i]);}
 
+  if (!doc.as<JsonObject>()["state"].containsKey("desired"))return;
+
+  
   if(doc["state"]["desired"]["pin1"] == "x"){pushRelay(RELAY_1);}
   if(doc["state"]["desired"]["pin2"] == "x"){pushRelay(RELAY_2);}
   if(doc["state"]["desired"]["pin3"] == "x"){pushRelay(RELAY_3);}
@@ -80,7 +77,7 @@ void messageReceived(char *topic, byte *payload, unsigned int length)
   doc["state"]["reported"] = doc["state"]["desired"];
   crew.remove("desired");
 
-  char jsonBuffer[512];
+  char jsonBuffer[256];
   serializeJson(doc, jsonBuffer); // print to client
   client.publish((const char *)AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
 }
@@ -88,18 +85,9 @@ void messageReceived(char *topic, byte *payload, unsigned int length)
 void connectAWS()
 {
   blinkLed(LED, 1000, 0, 4);
+
+  // delay(3000);
  
-  delay(3000);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
- 
-  Serial.println(String("Attempting to connect to SSID: ") + String(WIFI_SSID));
- 
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.print(".");
-    delay(1000);
-  }
  
   NTPConnect();
  
@@ -130,13 +118,7 @@ void connectAWS()
 
 }
  
-void publishMessage(StaticJsonDocument<400> doc)
-{
-  char jsonBuffer[512];
-  serializeJson(doc, jsonBuffer); // print to client
-  client.publish((const char *)AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
-}
- 
+
 void setup()
 {
   pinMode(LED, OUTPUT);
@@ -148,8 +130,11 @@ void setup()
   digitalWrite(RELAY_3, HIGH);
   pinMode(RELAY_4, OUTPUT);
   digitalWrite(RELAY_4, HIGH);
+  
   Serial.begin(9600);
 
+  blinkLed(LED, 1000, 0, 4);
+  setupWM();
   connectAWS();
  
 }
@@ -170,6 +155,7 @@ void loop()
       connectAWS();
     }
     client.loop();
+    loopWM();
   }
 
 }

@@ -2,10 +2,10 @@
  
 #define SECRET
  
-const char WIFI_SSID[] = "brisa-2702988";               //TAMIM2.4G
-const char WIFI_PASSWORD[] = "o5du40iw";           //0544287380
+const char WIFI_SSID[] = "tock-wifi";               //TAMIM2.4G
+const char WIFI_PASSWORD[] = "tocktecnologia";           //0544287380
  
-#define THINGNAME "pool-green2b"
+#define THINGNAME "pool-green2B"
  
 int8_t TIME_ZONE = -3; //NYC(USA): -5 UTC
  
