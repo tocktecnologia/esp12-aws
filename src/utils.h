@@ -2,16 +2,23 @@
 #define UTILS_H
 
 #include <ESP8266WiFi.h>
-const int LED = 2;
-unsigned long LedsSequence[4]; //[x] is the number of leds array
+#define LED_BUILTIN 2
+#include <Ticker.h>
 
-void blinkLed(int led, int interval, int array, int repeat)
+
+Ticker flipper;
+void flip()
 {
-  if ((int)((long)millis() - LedsSequence[array]) >= interval)
-  {
-    LedsSequence[array] = millis(); // stores the millis value in the selected array
-    digitalWrite(LED, !digitalRead(LED)); // changes led state
-  }
+    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); // set pin to the opposite state
 }
+
+String esp8266ID()
+{
+    byte mac[6];
+    WiFi.macAddress(mac);
+    return String(mac[2], HEX) + String(mac[3], HEX) + String(mac[4], HEX) + String(mac[5], HEX);
+}
+String getClientID(){ return "TOCK-PULSE-" + esp8266ID();}
+
 
 #endif //UTILS_H

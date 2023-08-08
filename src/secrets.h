@@ -2,7 +2,7 @@
  
 #define SECRET
  
-const char WIFI_SSID[] = "tock-wifi";               //TAMIM2.4G
+const char WIFI_SSID[] = "GreenLife 2B Deck 2.4";               //TAMIM2.4G
 const char WIFI_PASSWORD[] = "tocktecnologia";           //0544287380
  
 #define THINGNAME "pool-green2B"

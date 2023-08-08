@@ -48,6 +48,7 @@ void NTPConnect(void)
 
 void pushRelay(int id)
 {
+  Serial.println("\n"+ String("action Relay ") + String(id));
   digitalWrite(id, LOW);
   delay(500);
   digitalWrite(id, HIGH);
@@ -68,10 +69,10 @@ void messageReceived(char *topic, byte *payload, unsigned int length)
   if (!doc.as<JsonObject>()["state"].containsKey("desired"))return;
 
   
-  if(doc["state"]["desired"]["pin1"] == "x"){pushRelay(RELAY_1);}
-  if(doc["state"]["desired"]["pin2"] == "x"){pushRelay(RELAY_2);}
-  if(doc["state"]["desired"]["pin3"] == "x"){pushRelay(RELAY_3);}
-  if(doc["state"]["desired"]["pin4"] == "x"){pushRelay(RELAY_4);}
+  if(doc["state"]["desired"].containsKey("pin1")){pushRelay(RELAY_1);}
+  if(doc["state"]["desired"].containsKey("pin2")){pushRelay(RELAY_2);}
+  if(doc["state"]["desired"].containsKey("pin3")){pushRelay(RELAY_3);}
+  if(doc["state"]["desired"].containsKey("pin4")){pushRelay(RELAY_4);}
 
   JsonObject crew = doc["state"];
   doc["state"]["reported"] = doc["state"]["desired"];
@@ -84,10 +85,7 @@ void messageReceived(char *topic, byte *payload, unsigned int length)
  
 void connectAWS()
 {
-  blinkLed(LED, 1000, 0, 4);
 
-  // delay(3000);
- 
  
   NTPConnect();
  
@@ -114,14 +112,17 @@ void connectAWS()
   client.subscribe(AWS_IOT_SUBSCRIBE_TOPIC);
  
   Serial.println("AWS IoT Connected!");
-  blinkLed(LED, 2000, 0, 4);
+  flipper.attach(1, flip); 
 
 }
  
 
 void setup()
 {
-  pinMode(LED, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+  flipper.attach(0.2, flip); 
+
+
   pinMode(RELAY_1, OUTPUT);
   digitalWrite(RELAY_1, HIGH);
   pinMode(RELAY_2, OUTPUT);
@@ -133,7 +134,6 @@ void setup()
   
   Serial.begin(9600);
 
-  blinkLed(LED, 1000, 0, 4);
   setupWM();
   connectAWS();
  
@@ -144,11 +144,10 @@ void loop()
 
   if (!WiFi.isConnected())
   {
-    blinkLed(LED, 100, 0, 1);
+    flipper.attach(0.2, flip); 
   }
   else
   {
-    blinkLed(LED, 1000, 0, 4);
     if (!client.connected())
     {
       Serial.println("Client not connected! Connecting...");
